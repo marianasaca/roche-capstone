@@ -22,14 +22,16 @@ st.sidebar.header("Operational Parameters")
 lab_occupancy = st.sidebar.slider("Lab Occupancy (%)", 0, 100, 70, help="Current utilization of lab resources.")
 scientist_workload = st.sidebar.slider("Scientist Workload (Active Projects)", 1, 20, 5, help="Number of concurrent experiments per scientist.")
 
+# NEW: Time of Day (Critical for Lunchtime Rush logic)
+hour_of_day = st.sidebar.slider("Time of Day (Hour)", 0, 23, 10, help="Hour of the experiment booking (0-23).")
+
 st.sidebar.markdown("---")
 st.sidebar.header("Simulation & Supply Chain (V2)")
 
 # 2. V2 Features: Drift & Supply
 days_since_start = st.sidebar.slider("Days Since Installation (Simulate Aging)", 0, 730, 100, help="Higher values simulate older machines (Drift).")
 
-# Reagent Batch Selection (Top 5 list + Bad Ones)
-# We simulate a list of batches. BATCH_392 is the famous 'Bad Batch'.
+# Reagent Batch Selection
 batch_options = [f"BATCH_{i:03d}" for i in range(1, 11)] + ["BATCH_392", "BATCH_042", "BATCH_007"]
 reagent_batch_id = st.sidebar.selectbox("Reagent Batch ID", sorted(batch_options), index=0, help="Select the batch used for this experiment.")
 
@@ -43,12 +45,10 @@ scientist_experience = st.sidebar.selectbox("Scientist Experience", ["Junior", "
 priority_level = st.sidebar.selectbox("Priority Level", ["Low", "Medium", "High", "Critical"])
 
 # --- Advanced / Hidden Inputs ---
-# We need 'mean_ambient_temp' and 'expected_duration' for the model
-# We set reasonable defaults or infer them
 with st.expander("Advanced Configuration (Hidden Variables)"):
     mean_ambient_temp = st.slider("Mean Ambient Temp (°C)", 18.0, 30.0, 22.0)
     
-    # Duration Map (Inferred from Type)
+    # Duration Map
     duration_map = {'Validation': 60, 'QC': 45, 'Pilot': 90, 'Screening': 30, 'R&D': 120}
     default_duration = duration_map.get(experiment_type, 60)
     expected_duration = st.number_input("Expected Duration (mins)", value=default_duration)
@@ -56,17 +56,19 @@ with st.expander("Advanced Configuration (Hidden Variables)"):
 # --- Main Dashboard Logic ---
 
 # Create a DataFrame for the model
+# MUST Match the schema from '03_Model_Selection_Advanced.ipynb'
 input_data = pd.DataFrame({
     'scientist_workload': [scientist_workload],
     'lab_occupancy_level': [lab_occupancy],
     'expected_duration': [expected_duration],
-    'mean_ambient_temp': [mean_ambient_temp],
+    'ambient_temp': [mean_ambient_temp], # Renamed from mean_ambient_temp to match model
     'days_since_start': [days_since_start],
+    'hour_of_day': [hour_of_day], # NEW
+    'stress_index': [scientist_workload * lab_occupancy], # NEW: Engineered Feature
     'experiment_type': [experiment_type],
     'instrument_type': [instrument_type],
     'scientist_experience_level': [scientist_experience],
     'reagent_batch_id': [reagent_batch_id]
-    # Note: priority_level is excluded as it's not in the V2 model
 })
 
 col1, col2 = st.columns([2, 1])
@@ -119,15 +121,15 @@ with col2:
         st.info("""
         **Delay Drivers Identified:**
         
-        1.  **Lab Occupancy**:
-            *   Levels > 85% cause exponential blocking.
+        1.  **Stress Index**:
+            *   High Workload * High Occupancy = **Exponential Risk**.
         
         2.  **Machine Aging (Drift)**:
-            *   Instruments older than **600 days** (approx 2 years) show significant performance degradation.
+            *   Instruments older than **600 days** show degradation.
             
         3.  **Supply Chain**:
-            *   **BATCH_392** has been flagged as **DEFECTIVE**. Using this batch increases failure probability by 500%.
+            *   **BATCH_392** is a known defective batch.
         """)
     
     st.markdown("---")
-    st.caption("v2.0.1 | Roche Capstone AI")
+    st.caption("v2.1.0 | Roche Capstone AI")
