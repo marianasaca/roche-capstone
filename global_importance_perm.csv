@@ -1,0 +1,15 @@
+feature,importance,family
+incident_type,0.4546337514696401,Other
+experiment_type,0.0,Workflow Complexity
+instrument_type,0.0,Device Reliability
+instrument_id,0.0,Device Reliability
+scientist_workload,0.0,Queue & Scheduling
+scientist_experience_level,0.0,Workflow Complexity
+lab_occupancy_level,0.0,Queue & Scheduling
+expected_duration,0.0,Workflow Complexity
+booking_time,0.0,Queue & Scheduling
+telemetry_records,0.0,Device Reliability
+temp_mean,0.0,Device Reliability
+temp_max,0.0,Device Reliability
+temp_std,0.0,Device Reliability
+tel_time_span_sec,0.0,Device Reliability
